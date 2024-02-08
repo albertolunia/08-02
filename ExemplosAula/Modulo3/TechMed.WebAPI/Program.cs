@@ -1,11 +1,14 @@
+using System.Text;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using TechMed.Application.Auth;
 using TechMed.Application.Services;
 using TechMed.Application.Services.Interfaces;
+using TechMed.Infrastructure.Auth;
 using TechMed.Infrastructure.Persistence;
 using TechMed.Infrastructure.Persistence.Interfaces;
-using TechMed.Application.Auth;
-using TechMed.Infrastructure.Auth;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -31,15 +34,16 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new OpenApiInfo { Title = "BasicAuth", Version = "v1" });
-    c.AddSecurityDefinition("basic", new OpenApiSecurityScheme
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "TechMed API", Version = "v1" });
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Name = "Authorization",
-        Type = SecuritySchemeType.Http,
-        Scheme = "bearer",
+        Type = SecuritySchemeType.ApiKey,
+        Scheme = "Bearer",
+        BearerFormat = "JWT",
         In = ParameterLocation.Header,
-        Description = "Basic Authorization header using the Bearer scheme."
-    });
+        Description = "Authorization header using the Bearer scheme."
+    });;
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
                 {
                     {
@@ -48,17 +52,31 @@ builder.Services.AddSwaggerGen(c =>
                                 Reference = new OpenApiReference
                                 {
                                     Type = ReferenceType.SecurityScheme,
-                                    Id = "basic"
+                                    Id = "Bearer"
                                 }
                             },
                             new string[] {}
                     }
                 });
 });
-builder.Services.AddSwaggerGen();
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidAudience = builder.Configuration["Jwt:Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
+        };
+    });
 
 var app = builder.Build();
-
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -70,6 +88,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
