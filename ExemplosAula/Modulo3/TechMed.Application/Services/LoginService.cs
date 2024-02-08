@@ -15,7 +15,10 @@ public class LoginService : ILoginService
     public LoginViewModel? Authenticate(LoginInputModel login)
     {
         var passHashed = _authService.ComputeSha256Hash(login.Password);
-        //if (login.Username == "admin" && login.Password == "admin"){}
-        throw new NotImplementedException();
+        if (login.Username == "admin" && passHashed == _authService.ComputeSha256Hash("admin"))
+        {
+            var token = _authService.GenerateJwtToken(login.Username, "admin");
+        }
+        return null;
     }
 }
