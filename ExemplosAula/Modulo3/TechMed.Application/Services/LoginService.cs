@@ -13,12 +13,18 @@ public class LoginService : ILoginService
         _authService = authService;
     }
     public LoginViewModel? Authenticate(LoginInputModel login)
-    {
-        var passHashed = _authService.ComputeSha256Hash(login.Password);
-        if (login.Username == "admin" && passHashed == _authService.ComputeSha256Hash("admin"))
-        {
-            var token = _authService.GenerateJwtToken(login.Username, "admin");
-        }
-        return null;
-    }
+   {
+      //TODO: verificar se o usuario e senha coincidem e retornar o token
+      var passHashed = _authService.ComputeSha256Hash(login.Password);
+      if (login.Username == "admin" && passHashed == _authService.ComputeSha256Hash("admin"))
+      {
+         var token = _authService.GenerateJwtToken(login.Username, "admin");
+         return new LoginViewModel
+         {
+            Username = login.Username,
+            Token = token
+         };
+      }
+      return null;
+   }
 }
